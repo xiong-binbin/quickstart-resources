@@ -1,3 +1,4 @@
+import os
 import asyncio
 from typing import Optional
 from contextlib import AsyncExitStack
@@ -5,7 +6,7 @@ from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from anthropic import Anthropic
+from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()  # load environment variables from .env
@@ -15,7 +16,10 @@ class MCPClient:
         # Initialize session and client objects
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
-        self.anthropic = Anthropic()
+        self.client = OpenAI(
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        )
 
     async def connect_to_server(self, server_script_path: str):
         """Connect to an MCP server
@@ -63,7 +67,7 @@ class MCPClient:
         } for tool in response.tools]
 
         # Initial Claude API call
-        response = self.anthropic.messages.create(
+        response = self.client.chat.completions.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=1000,
             messages=messages,
@@ -98,7 +102,7 @@ class MCPClient:
                 })
 
                 # Get next response from Claude
-                response = self.anthropic.messages.create(
+                response = self.client.chat.completions.create(
                     model="claude-3-5-sonnet-20241022",
                     max_tokens=1000,
                     messages=messages,
